@@ -1,0 +1,200 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{enumerate}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{subfigure}
+\usepackage{subcaption}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Group 6 Milestone 1: FracTrack\\[0.5em] 
+       \large Deep Learning for X-Ray Fracture Analysis}
+\author{Your Name}
+\author{\IEEEauthorblockN{Srivatsa Balasubramanyam}
+\IEEEauthorblockA{\textit{University of Virginia} \\
+\textit{School of Data Science}\\
+Parkland, Florida \\
+mhe3sy@virginia.edu}
+\and
+\IEEEauthorblockN{Claire Sullivan}
+\IEEEauthorblockA{\textit{University of Virginia} \\
+\textit{School of Data Science}\\
+Charlottesville, Virginia \\
+kyq5rs@virginia.edu}
+\and
+\IEEEauthorblockN{Jasmine Waller}
+\IEEEauthorblockA{\textit{University of Virginia} \\
+\textit{School of Data Science}\\
+Charlottesville, Virginia \\
+vwx5pn@virginia.edu}
+\and
+\IEEEauthorblockN{Kristina Quintana}
+\IEEEauthorblockA{\textit{University of Virginia} \\
+\textit{School of Data Science}\\
+Charlottesville, Virginia \\
+kvq4nvn@virginia.edu}
+}
+
+\maketitle
+
+
+
+\section{Motivation}
+
+Musculoskeletal (MSK) conditions affect more than 1.7 billion individuals worldwide~\cite{usbji2014bmus}. The incidence of MSK conditions is expected to rise to roughly 2.1 billion by 2035, with MSK-associated mortality reaching 157 million people~\cite{liu2025_global_msk}. Current estimates predict that in the United States, approximately 4{,}017 fractures occur per 100{,}000 people ($\sim$4\%) per year~\cite{amin2014_trends_fracture}, reflecting the high prevalence of fracture injuries. Fracture risk has been shown to increase with age and is more prevalent in females~\cite{amin2014_trends_fracture}.
+
+Despite advanced medical technology and extensive professional training, 1--5\% of radiograph interpretations in the United States miss abnormality diagnoses~\cite{zech2022ai_fracture,newman_toker2022_diag_errors}. In emergency departments, the error rate is even higher, with missed diagnoses reported as high as 24\% based on X-ray images~\cite{qin2026enhanced_fracture_detection}. Additionally, access to advanced healthcare can be limited by the standard of care in a patient's region and further influenced by factors such as medical education, hospital funding, facility accessibility, and patient motivation to seek care. Even in state-of-the-art hospitals, workload demands are high, and human error can occur.
+
+The ability of a deep learning model to identify and interpret X-ray images provides a fast and standardized method for abnormality detection. Such a system could improve the level of care for hospitals and patients with limited resources while reducing the workload for emergency departments and radiologic technicians. The goal of this project is to design a robust deep learning model that processes radiographic images of the upper extremity, determines the extent of injury, and identifies the presence of abnormalities, indicating when a patient should seek further medical evaluation.
+
+\section{Dataset}
+
+
+\subsection{MURA: MSK X-rays Dataset}
+
+This project utilizes the \textit{MURA: MSK X-rays} dataset, supplied by Stanford University Medical Center and made available via the Center for Artificial Intelligence in Medicine Imaging (CAIMI) platform. The dataset consists of a total of 40{,}561 X-ray images of the upper extremity, categorized into elbow, finger, forearm, hand, humerus, shoulder, and wrist. The data were collected from 12{,}173 patients across 14{,}863 studies.
+
+Each radiographic image is identified by anatomical category, patient, and classification label (positive or negative) indicating the presence of a musculoskeletal abnormality. Abnormality labels were assigned at the time of clinical radiographic interpretation by board-certified radiologists at Stanford Hospital. Abnormalities are defined as fractures, the presence of hardware, degenerative joint disease, and \textit{miscellaneous abnormalities}, which include lesions and subluxations~\cite{rajpurkar2018mura}. Imaging and abnormality evaluation occurred from 2001 to 2012.
+
+The positive and negative musculoskeletal abnormality counts for each upper limb anatomical region in the training and validation sets are shown in Tables~\ref{tab:training_distribution} and~\ref{tab:validation_distribution}, respectively.
+
+
+\begin{table}[h]
+\centering
+\caption{Training Set}
+\begin{tabular}{lrr}
+\hline
+\textbf{Body Part} & \textbf{Negative (0)} & \textbf{Positive (1)} \\
+\hline
+Elbow    & 1094 & 660 \\
+Finger   & 1280 & 655 \\
+Forearm  & 590  & 287 \\
+Hand     & 1497 & 521 \\
+Humerus  & 321  & 271 \\
+Shoulder & 1364 & 1457 \\
+Wrist    & 2134 & 1326 \\
+\hline
+\end{tabular}
+\caption{Positive and negative abnormality counts by anatomical region in the MURA training set.}
+\label{tab:training_distribution}
+\end{table}
+
+
+\begin{table}[h]
+\centering
+\caption{Validation Set}
+\begin{tabular}{lrr}
+\hline
+\textbf{Body Part} & \textbf{Negative (0)} & \textbf{Positive (1)} \\
+\hline
+Elbow    & 92  & 66 \\
+Finger   & 92  & 83 \\
+Forearm  & 69  & 64 \\
+Hand     & 101 & 66 \\
+Humerus  & 68  & 67 \\
+Shoulder & 99  & 95 \\
+Wrist    & 140 & 97 \\
+\hline
+\end{tabular}
+\caption{Positive and negative abnormality counts by anatomical region in the MURA validation set.}
+\label{tab:validation_distribution}
+\end{table}
+
+\subsection{FracAtlas Dataset}
+
+This project also implements the \textit{FracAtlas} dataset for further evaluation of the model. FracAtlas was released in 2023 as an improved publicly accessible dataset of X-ray scans designed specifically for bone fracture classification, localization, and segmentation. Researchers collected 14{,}068 X-ray scans from 2021 and 2022 across three prominent hospitals and diagnostic centers in Bangladesh and isolated 4{,}083 images corresponding to the hand, shoulder, leg, and hip regions, discarding chest and skull regions.
+
+Institutional Research Ethics Boards approved the open publication of the dataset following proper anonymization of personally identifiable information to maintain patient confidentiality. Two expert radiologists reviewed the image collection and labeled each image by fracture presence, number, and anatomical location. Results were cross-checked for consistency, and any discrepancies were referred to an expert orthopedic surgeon for further review and final classification.
+    
+\section{Literature Review}
+
+The use of machine learning and deep learning for X-ray analysis has been well documented in the field. Here, we systematically review previous methods to understand what contributes to successful radiographic image classification, as well as areas for improvement.
+
+Abnormality detection in X-ray images can be applied at a bone-specific level. One study published by Yangon Technological University in Myanmar examined the use of common classification methods—Decision Trees and K-Nearest Neighbors (KNN)—to identify fractures in the tibia, a lower leg bone \cite{Myint2018LegFracture}. The model followed a simple workflow: the X-ray image was input into the model, underwent preprocessing, and then feature extraction, which determined classification as fracture or non-fracture. A subsequent classification step determined the fracture type.
+
+To preprocess the image, the team used the \texttt{rgb2gray} function in MATLAB to convert images from color to grayscale. The resulting grayscale image was sharpened using an Unsharp Mask (USM) filter. This filter works by intentionally blurring the image, subtracting the blurred version from the original to obtain a difference image, and then adding this difference back to the original image to produce a sharpened result. The sharpened image was then processed using a feature extraction workflow based on the Harris corner detection algorithm. This algorithm identifies break points indicating linear edges, flat regions, or corners by measuring intensity changes in both the X and Y directions using derivatives. Intensity changes above a defined threshold indicate a ``break point.'' \cite{Myint2018LegFracture}. 
+
+Following feature detection, the image entered the classification stage. A decision tree used the presence of one or more break points to indicate a fracture. A KNN classifier was then trained on images with break points to determine whether the fracture belonged to one of three types: transverse, oblique, or comminuted. The model achieved an accuracy of 83\% as measured by Cohen’s kappa \cite{Myint2018LegFracture}.
+
+The paper identified several shortcomings of this model. The most significant limitation is its inability to detect fractures outside the three predefined types. The model fails to identify cracked or ragged fractures, as well as other bone lesions. Additionally, the model is sensitive to brightness and contrast variations in X-ray images, indicating a lack of image standardization and limited applicability to datasets not specifically curated for the algorithm. Because the model was trained solely on tibial radiographs, its generalizability to other bones is limited. A leg-bone-specific fracture detection model is impractical in clinical settings.
+
+An additional limitation not discussed in the paper is the reliance on Harris corner detection to identify break points. Small or unclear fractures may not produce detectable break points, leading to missed diagnoses. Due to the basic classification framework, the model does not provide additional information such as fracture location or severity. Overall, the reported accuracy is relatively low and unlikely to meet clinical standards.
+
+Another study applied an object detection approach rooted in regression to identify fractures in the MURA MSK dataset. This study implemented the previously published YOLO (``You Only Look Once'') architecture\cite{Redmon2016YOLO}. YOLO maps images to bounding boxes and class probabilities rather than using a traditional classifier head. The system divides an image into a grid, where each grid cell predicts bounding boxes and associated confidence scores. These predictions estimate both the presence of an object and the accuracy of the bounding box.
+
+The network is based on the GoogLeNet architecture, with inception blocks replaced by $1\times1$ and $3\times3$ convolutional layers \cite{Redmon2016YOLO}. A loss function determines bounding box confidence, and objects are assigned to the box with the highest intersection over union (IoU). The model was tested with data augmentation and optimized parameters. Key strengths include implementation simplicity and computational efficiency due to the single-network design. Limitations include difficulty detecting overlapping or clustered objects.
+
+Building on these methods, researchers at Carebot s.r.o.\ applied YOLO to the MURA dataset for fracture detection \cite{Hruby2024_cross_center_medrxiv}. In this study, an in-house radiologist manually annotated X-ray images with bounding boxes around fracture regions. This enabled YOLO to predict fracture locations rather than only the presence or absence of abnormalities. The study used 720 images from the MURA dataset, with a total of 832 bounding boxes.
+
+The model output was defined as $y = (p_c, b_x, b_y, b_h, b_w, c)$, where $p_c$ represents the probability of a fracture, $(b_x, b_y)$ are the center coordinates of the bounding box, $(b_h, b_w)$ are the box dimensions, and $c$ denotes classification (fracture vs.\ no fracture). The model was tested on two datasets: one from FracAtlas and another internally collected dataset. Performance varied across datasets. On FracAtlas data, the model achieved a sensitivity of 0.91 and specificity of 0.57. On the internal dataset, sensitivity was 0.622 and specificity was 0.74. Additionally, while 131/144 positive fractures were correctly identified in the FracAtlas dataset, 308/696 negative cases were incorrectly classified, indicating a tendency to overpredict fractures \cite{Hruby2024_cross_center_medrxiv}.
+
+A key limitation of YOLO in this application is its variable positive prediction rate, indicating the need for further tuning before clinical deployment. Specifically, the model may incorrectly identify irregular bone regions as fractures. Another limitation is the requirement for manual bounding box annotation, which is labor-intensive and limits scalability. This study also highlights the importance of diverse training data; training on a single dataset can lead to dataset-specific overfitting and poor generalization. Performance could be improved by combining datasets (e.g., MURA, FracAtlas, and internal data) and repartitioning into new training, validation, and test splits.
+
+Duan et al. \cite{liu2022convnet2020s} adopted a hybrid modeling approach to address limitations commonly observed in single deep learning architectures applied to the MURA dataset. As deep learning becomes increasingly prevalent in medical diagnostics, MURA serves as a benchmark dataset for evaluating model performance in musculoskeletal abnormality detection. To enhance classification robustness, the authors integrated ResNet50, DenseNet121, and a Human Block into a unified HDR framework.
+
+ResNet50, a 50-layer residual convolutional neural network, was implemented to mitigate network degradation and enable deeper training. Images were converted into tensors and optimized using the Adam optimizer, with cross-entropy loss guiding classification performance improvements. Similarly, DenseNet121 leveraged dense connectivity, transition layers, and global average pooling to strengthen feature propagation and reduce vanishing-gradient issues by connecting each layer to subsequent layers in a feed-forward manner. The Human Block incorporated expert clinical judgments, translating them into structured probabilistic outputs to computationally emulate human diagnostic reasoning. Prediction probabilities from the neural networks and the Human Block were then aggregated using a Bayesian model to produce the final classification. 
+
+The hybrid approach achieved prediction accuracies ranging from 75\% to 90\% and consistently outperformed single-model architectures, indicating that integrating deep learning with human oversight enhances generalization and clinical applicability, particularly for less experienced practitioners. However, the authors note that further architectural optimization, more granular abnormality classification, and uncertainty estimation techniques are necessary to improve robustness and real-world deployment \cite{duan2024_msk_xray_dl}.
+
+Recent research using the MURA dataset has shifted from training convolutional neural networks (CNNs) from scratch toward leveraging large pretrained medical foundation models. Maity et al. [11] proposed a MedGemma-based abnormality detection framework for musculoskeletal radiographs. Unlike traditional CNN pipelines that learn features directly from the dataset, MedGemma uses a pretrained medical image encoder derived from SigLIP that has already learned general anatomical structures, bone morphology, and pathological patterns prior to exposure to the MURA dataset.
+
+In this approach, each radiograph is passed through the pretrained encoder to produce a high-dimensional feature embedding. Instead of updating the entire network, only the upper layers and classification head are optimized using a transfer-learning paradigm with a two-tier learning rate strategy. This selective unfreezing allows the model to adapt high-level diagnostic learning while preserving previously learned low-level anatomical features.
+
+The authors evaluated the model using macro-averaged metrics across anatomical classes and demonstrated improved macro-F1 and AUROC compared to head-only adaptation. The results suggested that controlled adaptation of higher-level vision representations improves abnormality discrimination while maintaining training stability. Additionally, the study found that higher-resolution inputs improved sensitivity to subtle abnormalities, specifically in small-lesion anatomies. 
+
+Despite strong performance that supports the future use of large pretrained models for medical images, the study has several limitations. The task remains restricted to the detection of binary abnormalities that do not provide a detailed diagnostic categorization. The authors do not analyze failure cases or prediction reliability, leaving uncertainty regarding clinical robustness. Additionally, the large pretrained model is computationally expensive and may not be suitable for deployment in low-resource environments 
+
+Overall, this work motivates investigating whether similar improvements can be achieved using smaller, more accessible architectures through selective fine-tuning strategies and other combined approaches rather than large foundation models.
+
+
+
+\section{Proposed Methods}
+
+We propose a multi-task deep learning model designed to analyze upper extremity radiographic images. The model jointly performs anatomical classification and abnormality detection using the MURA dataset. Each radiograph is first categorized into one of seven anatomical regions (elbow, finger, forearm, hand, humerus, shoulder, or wrist), and simultaneously classified as normal or abnormal according to MURA definitions (fracture, hardware presence, degenerative joint disease, or miscellaneous abnormality). We plan to use mulit-task learning to encourage the network to learn anatomically meaningful representations using feature extraction and a task-specific classification head to improve abnormality detection. 
+
+The backbone architecture is based on ConvNeXt, a modern convolutional neural network designed by modernizing classical CNN architecture designed to match transformer-level performance \cite{liu2022convnet2020s}. ConvNeXt replaces traditional residual bottlenecks with inverted bottlenecks, employs larger convolutional kernel sizes, reduces normalization layers, and uses simple GELU activation functions to improve feature representation and training stability. These properties make it well-suited for medical imaging tasks that require sensitivity to subtle structural variations and performance comparable to modern vision transformer models \cite{touvron2021deit}.
+
+The network will be initialized on the ImageNet pretrained weights to learn general visual features and apply transfer learning to adapt the model to our final radiographic images. Pretraining enables the model to learn low-level visual features such as edges and textures, allowing faster convergence and improved performance on limited medical data. Then, the network will be fine tuned to specifically detect body parts and abnormalities in the MURA dataset. The final architecture will consist of a shared feature extractor followed by two task-specific classification heads. 
+
+To improve generalization, we will use data augmentation on the radiographic images, including contrast adjustments and small rotations to simulate variability in imaging conditions such as different X-ray technologies and patient positioning. We hope the rotation augmentation will help represent the varying locations a fracture will occur. We will avoid transformations such as flipping or cropping to preserve anatomical integrity.  In the classification head of the model, we plan on adding dropout to our model training to reduce overfitting. Dropout randomly deactivates neurons in the network, promoting distribution of features across the network and improving generalization. This is relevant to the field of medical imaging where there can be limited training data and we risk memorization of specific patient images. 
+
+After training and validation on the MURA dataset, model generalization will be evaluated on the FracAtlas dataset (see Dataset Section) to measure robustness across different imaging sources and data imaging conditions. 
+
+
+\section{Experiments}
+This project plans to use various methods to validate the effectiveness and accuracy of our model. As general model performance standards, F1-score, AUC value, ROC curve, recall, accuracy, and precision will be used to compare our model against the Hybrid model and the MedGamma model. Additionally, clinically relevant evaluation metrics will be incorporated to better reflect real-world diagnostic performance.
+
+To provide a more detailed performance analysis, confusion matrices will be generated to visualize true positives (TP), true negatives (TN), false positives (FP), and false negatives (FN). From these, we will compute sensitivity (true positive rate), defined as TP / (TP + FN), which measures the proportion of actual positive cases correctly identified. Specificity (true negative rate), calculated as TN / (TN + FP), will assess the proportion of actual negative cases correctly classified. Positive Predictive Value (PPV), TP / (TP + FP), will evaluate the likelihood that a positive prediction corresponds to a true positive, while Negative Predictive Value (NPV), TN / (TN + FN), will measure the reliability of negative predictions. These metrics are particularly important in clinical settings, where minimizing false negatives and false positives directly impacts patient outcomes.
+
+In addition to traditional classification metrics, we will incorporate evaluation standards commonly used in object detection frameworks such as those presented in the YOLO literature, ensuring that detection-based performance measures remain clinically meaningful. This will allow us to assess localization accuracy alongside classification performance where applicable.
+
+To evaluate generalizability, the model will also be tested on the FracAtlas+ dataset as a secondary evaluation dataset. This external validation step will help determine how well the model performs on unseen data and whether it maintains robustness across varying image distributions.
+
+An ablation study will further assess the contribution of individual model components. We will systematically remove or modify specific elements to measure their impact on overall performance. This includes removing data augmentation techniques, reducing image resolution through downsampling, eliminating batch normalization layers, and selectively removing architectural components. These experiments will provide insight into which design choices most significantly influence model effectiveness and stability.
+
+
+\section{Declaration on Generative AI}
+The authors used ChatGPT and Grammarly to check grammar and spelling as well as reword author-written work. After using these tools, the authors reviewed and edited the final text, used in this document. 
+
+\section{Individual Contributions}
+Claire Sullivan worked on the Motivation, Datasets, Proposed Methods, and References Compiling sections. Claire Sullivan researched the use of simple machine learning models and the YOLO model in x-ray analysis.  
+
+Kristina Quintana worked on the Motivation, Literature Review, Proposed Methods, and Reference Compiling sections. Kristina researched the use of pretrained networks and application of transfer learning , inspired by the MedGemma-based model.
+
+Jasmine Waller worked on the Motivation, Datasets, Experiments, and Reference Compiling sections. Jasmine Waller researched the use of hybrid modeling to further enhance the capabilities and accuracy of neural networks in X-Ray analysis.
+
+\bibliographystyle{IEEEtran}  
+\bibliography{refs}         
+\bibliographystyle{unsrt}
+
+\end{document}

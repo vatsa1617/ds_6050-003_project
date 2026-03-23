@@ -1,0 +1,215 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{enumerate}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{subfigure}
+\usepackage{subcaption}
+\usepackage{microtype}
+\usepackage{caption}
+\captionsetup{font=small}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Proposal - OLD FILE, SEE MILESTONE 1 FILE\\
+\large{Automated Abnormality Detection in Upper-Extremity Radiographs (MURA + FracAtlas)}}
+
+\author{
+  \IEEEauthorblockN{Srivatsa Balasubramanyam}
+  \IEEEauthorblockA{\textit{University of Virginia} \\ \textit{School of Data Science} \\ Parkland, Florida \\ mhe3sy@virginia.edu}
+  \and
+  \IEEEauthorblockN{Claire Sullivan}
+  \IEEEauthorblockA{\textit{University of Virginia} \\ \textit{School of Data Science} \\ Charlottesville, Virginia \\ kyq5rs@virginia.edu}
+  \and
+  \IEEEauthorblockN{Jasmine Waller}
+  \IEEEauthorblockA{\textit{University of Virginia} \\ \textit{School of Data Science} \\ Charlottesville, Virginia \\ vwx5pn@virginia.edu}
+  \and
+  \IEEEauthorblockN{Kristina Quintana}
+  \IEEEauthorblockA{\textit{University of Virginia} \\ \textit{School of Data Science} \\ Charlottesville, Virginia \\ kvq4nvn@virginia.edu}
+}
+
+\maketitle
+
+\begin{abstract}
+We develop a multi-task deep learning system for detecting musculoskeletal (MSK) abnormalities in upper-extremity radiographs. We train on the MURA dataset and evaluate cross-dataset generalization on FracAtlas. The system performs anatomical region classification and binary abnormality detection with a ConvNeXt-based backbone, and emphasizes transfer learning, careful augmentation, and evaluation on external data to measure robustness.
+\end{abstract}
+
+\begin{IEEEkeywords}
+MURA, FracAtlas, fracture detection, ConvNeXt, transfer learning, radiograph.
+\end{IEEEkeywords}
+
+\section{Motivation}
+Musculoskeletal (MSK) conditions affect more than 1.7 billion individuals worldwide \cite{ref7}. Incidence of MSK conditions is expected to rise to roughly 2.1 billion by 2035, with MSK-associated mortality reaching 157 million people \cite{ref8}. Current estimates predict that in the United States, roughly 4,017 fractures occur per 100,000 people (~4\%) per year \cite{ref9}, reflecting how common fracture incidences are. An increase in fracture risk has been shown to be associated with age and is more prevalent in females \cite{ref9}.
+
+Despite advanced medical technology and extensive medical training for professionals, 1--5\% of radiograph interpretations in the United States miss abnormalities, with emergency department error rates reaching up to 24\% \cite{ref1,ref2,ref3}. These error rates may result from workload pressure, imaging variability, and radiographic findings that are difficult to detect consistently.
+
+Access to advanced healthcare can be limited by the standard of care provided in a patient's region, further impacted by factors such as medical schooling, hospital funding, hospital accessibility, and patient motivation to seek care. Even in well-equipped hospitals, high workload demands contribute to human error and delayed diagnoses. An accessible deep learning system capable of standardized radiographic interpretation could improve consistency of care while reducing clinician and emergency department workload.
+
+Therefore, the goal of this project is to design a well-developed deep learning model that builds on prior model features to process a radiographic image of any upper extremity, determine the extent, and identify the presence of an abnormality, indicating that the patient should seek further medical care.
+
+\section{Dataset}
+This project utilizes the MURA: MSK X-rays dataset, supplied by Stanford University Medical Center and made available via the Center for Artificial Intelligence in Medicine Imaging (CAIMI). The dataset consists of a total of 40,561 X-ray images of the upper extremity, falling into categories of elbow, finger, forearm, hand, humerus, shoulder, or wrist. The data were collected from 12,173 patients across 14,863 studies. Each radiographic image is identified with the anatomical category, patient identifier, and a binary label indicating whether a musculoskeletal abnormality is present. Abnormality labels were identified during clinical interpretation by board-certified radiologists at Stanford Hospital. Abnormalities include fractures, presence of hardware, degenerative joint disease, and miscellaneous abnormalities (e.g., lesions, subluxations) \cite{ref6}. Imaging and abnormality annotation occurred from 2001 to 2012.
+
+Tables~\ref{tab:train_counts} and ~\ref{tab:val_counts}shows the positive and negative abnormality counts for each upper-limb anatomical region in the training and validation splits.
+
+
+\subsection{Train / Validation counts (MURA)}
+\begin{table}[H]
+  \centering
+  \caption{Training counts by anatomical region (label 0 = negative, 1 = positive)}
+  \label{tab:train_counts}
+  \begin{tabular}{@{}lrr@{}}
+    \toprule
+    body\_part & label 0 & label 1 \\
+    \midrule
+    ELBOW   & 1094 & 660 \\
+    FINGER  & 1280 & 655 \\
+    FOREARM & 590  & 287 \\
+    HAND    & 1497 & 521 \\
+    HUMERUS & 321  & 271 \\
+    SHOULDER& 1364 & 1457 \\
+    WRIST   & 2134 & 1326 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Validation counts by anatomical region (label 0 = negative, 1 = positive)}
+  \label{tab:val_counts}
+  \begin{tabular}{@{}lrr@{}}
+    \toprule
+    body\_part & label 0 & label 1 \\
+    \midrule
+    ELBOW   & 92  & 66  \\
+    FINGER  & 92  & 83  \\
+    FOREARM & 69  & 64  \\
+    HAND    & 101 & 66  \\
+    HUMERUS & 68  & 67  \\
+    SHOULDER& 99  & 95  \\
+    WRIST   & 140 & 97  \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{FracAtlas (external test)}
+To evaluate cross-dataset generalization, we also use the FracAtlas dataset \cite{ref12}. Released in 2023, FracAtlas provides 14,068 X-ray scans from 2021--2022 collected from three hospitals/diagnostic centers in Bangladesh. After filtering out non-relevant regions (e.g., chest and skull), 4,083 images of hand, shoulder, leg, and hip remain for our experiments. The dataset was approved for open publication by institutional research ethics boards after anonymization. Two expert radiologists annotated each image for fracture presence, number, and anatomical location; disagreements were resolved by an orthopedic surgeon \cite{ref12}.
+
+\section{Literature Review}
+The use of machine learning and deep learning for X-ray analysis is well documented. We summarize representative prior methods and limitations to motivate our approach.
+
+\subsection{Classical feature + classifier approaches}
+Early work applied classical computer-vision feature extractors and standard classifiers. For example, a study from Yangon Technological University used MATLAB preprocessing (rgb2gray, unsharp mask sharpening) followed by Harris corner detection to detect breakpoints; these were used with a decision tree and KNN to classify tibial fractures into a few fixed types (transverse, oblique, comminute). While achieving $\sim$83\% accuracy (Kappa), the method is fragile: it is sensitive to contrast/brightness, limited to a single bone type, fails for subtle or irregular fracture patterns, and offers no localization or severity estimates.
+
+\subsection{Object detection approaches (YOLO)}
+Object-detection models like YOLO (You Only Look Once) frame fracture localization as a bounding-box regression + classification task. YOLO divides images into grid cells and predicts bounding boxes and class confidences per cell. Advantages include single-stage efficiency and direct localization; disadvantages arise with overlapping or clustered objects and the need for bounding-box annotations to train. Carebot s.r.o.\ applied YOLO to MURA with in-house radiologist box annotations (720 images, 832 boxes). The model achieved high sensitivity on FracAtlas (0.91) but lower specificity (0.57) and showed dataset-dependent performance (sensitivity 0.622 / specificity 0.74 on an internal dataset), indicating overprediction in some cohorts and the need for diverse training data and careful tuning.
+
+\subsection{Hybrid and ensemble methods}
+Duan et al. \cite{ref10} combined ResNet50, DenseNet121, and a clinician-inspired ``Human Block'' in an HDR framework, aggregating outputs via a Bayesian model. This hybrid approach (75--90\% accuracy across tasks) shows that combining complementary model inductive biases and human knowledge can improve robustness. However, it increases complexity and still requires additional improvements in fine-grained abnormality categorization and uncertainty estimation.
+
+\subsection{Foundation / pre-trained medical encoders}
+Recent work shifts to pretrained medical foundation encoders (e.g., MedGemma, SigLIP-derived weights) and selective fine-tuning. Maity et al. \cite{ref11} passed radiographs through a pretrained encoder and only fine-tuned upper layers and the head with a two-rate learning strategy. This yielded improved macro-F1 and AUROC while preserving low-level anatomical features, and highlighted the benefit of high-resolution inputs for subtle abnormality detection. Drawbacks include compute cost and potential deployment difficulty in low-resource settings.
+
+\subsection{Summary and identified gaps}
+Common limitations across prior work include:
+\begin{itemize}
+  \item Sensitivity to dataset-specific imaging conditions (contrast, position, acquisition device).
+  \item Limited generalization without diverse training data; models often overpredict on new cohorts.
+  \item Many methods perform binary detection without localization or severity grading.
+  \item Large pretrained models improve accuracy but increase computational burden.
+\end{itemize}
+These motivate a balanced approach: leverage transfer learning for strong feature extractors, adopt targeted fine-tuning and task-specific heads (multi-task learning), incorporate careful augmentation and uncertainty estimation, and evaluate on external datasets (FracAtlas) to measure generalization.
+
+\section{Proposed Method}
+\subsection{Problem formulation}
+We frame the task as multi-task learning: given an upper-extremity radiograph, predict
+\begin{enumerate}
+  \item anatomical region (one of: elbow, finger, forearm, hand, humerus, shoulder, wrist), and
+  \item binary abnormality label (normal vs abnormal as defined by MURA).
+\end{enumerate}
+Optionally, downstream extensions include localization (bounding boxes) and fine-grained abnormality labels.
+
+\subsection{Model architecture}
+We propose a shared ConvNeXt backbone \cite{ref13,ref14} pretrained on ImageNet with two task-specific heads:
+\begin{itemize}
+  \item \textbf{Anatomy head:} a softmax classifier for the 7 anatomical regions.
+  \item \textbf{Abnormality head:} a sigmoid (or softmax for multi-class extension) classification head for abnormal vs normal.
+\end{itemize}
+ConvNeXt is chosen for its modernized convolutional design (inverted bottlenecks, larger kernels, GELU activations) and performance that approaches transformer-based models while remaining computationally efficient.
+
+\subsection{Training strategy}
+\begin{itemize}
+  \item \textbf{Pretraining / initialization:} initialize backbone with ImageNet-pretrained weights, then fine-tune.
+  \item \textbf{Multi-task loss:} weighted combination $\mathcal{L} = \lambda_{\text{anat}} \mathcal{L}_{\text{anat}} + \lambda_{\text{abn}} \mathcal{L}_{\text{abn}}$, where $\mathcal{L}_{\text{anat}}$ is cross-entropy and $\mathcal{L}_{\text{abn}}$ is binary cross-entropy.
+  \item \textbf{Optimization:} AdamW optimizer, cosine learning-rate schedule, early stopping on validation macro-F1.
+  \item \textbf{Regularization:} dropout in heads, weight decay, and label smoothing (if helpful).
+\end{itemize}
+
+\subsection{Data augmentation and preprocessing}
+To improve robustness while preserving anatomical correctness:
+\begin{itemize}
+  \item Intensity augmentations: random contrast and brightness jittering to mimic acquisition differences.
+  \item Geometric augmentations: small rotations (e.g., $\pm 10^\circ$), translations to simulate positioning variability. \textbf{Do not} apply horizontal flips (will confuse left/right anatomy) nor large crops that remove critical anatomy.
+  \item Normalization: per-image min-max or histogram-based normalization consistent across train/val/test to reduce domain shift.
+\end{itemize}
+
+\subsection{Evaluation and cross-dataset generalization}
+\begin{itemize}
+  \item Primary metrics: per-class and macro-averaged F1 for abnormality detection; accuracy for anatomical classification.
+  \item Calibration: expected calibration error (ECE) and reliability diagrams to evaluate probabilistic outputs.
+  \item External validation: evaluate final model on FracAtlas to quantify generalization and failure modes.
+  \item Ablations: compare ConvNeXt backbone vs smaller CNNs and a light-weight transformer (if compute permits); test different augmentation and loss weightings.
+\end{itemize}
+
+\section{Experiments}
+\textbf{Implementation details (planned):}
+\begin{itemize}
+  \item Input preprocessing: resize shorter side to 512 px, keep aspect ratio, then center-pad to $512\times512$.
+  \item Batch size: 32 (adjust to GPU memory).
+  \item Epochs: up to 50 with early stopping (patience 5).
+  \item Learning rates: initial $1\mathrm{e}{-4}$ for head, $1\mathrm{e}{-5}$ for backbone (two-tier LR).
+  \item Hardware: experiments run on NVIDIA GPU(s) (specify in final draft).
+\end{itemize}
+
+\textbf{Ablation studies:}
+\begin{enumerate}
+  \item Backbone comparison: ConvNeXt-Tiny vs ResNet50 vs a lightweight ViT.
+  \item Augmentation ablation: with / without rotations, intensity jitter, histogram equalization.
+  \item Multi-task loss weighting sweep: vary $\lambda_{\text{anat}}$ and $\lambda_{\text{abn}}$.
+  \item Cross-dataset evaluation: train on MURA, test on FracAtlas (and retrain with small fractions of FracAtlas to measure domain adaptation benefit).
+\end{enumerate}
+
+\textbf{Planned outputs:}
+ROC / PR curves, confusion matrices (per anatomical class), Grad-CAM visualizations for interpretability, calibration plots, and detailed failure-case analysis.
+
+\section{Member Contributions}
+\begin{itemize}
+  \item \textbf{Srivatsa Balasubramanyam:} model architecture design, ConvNeXt implementation, training pipeline.
+  \item \textbf{Claire Sullivan:} data preprocessing, MURA / FracAtlas ingestion, augmentation pipelines.
+  \item \textbf{Jasmine Waller:} evaluation framework, metrics, calibration and visualization (Grad-CAM).
+  \item \textbf{Kristina Quintana:} literature review, ablation design, write-up and results synthesis.
+\end{itemize}
+
+\section{References}
+% Add your BibTeX file 'refs.bib' and cite entries above (ref1..ref14 etc).
+\bibliographystyle{unsrt}
+\bibliography{refs}
+
+% If you prefer an inline bibliography temporarily, uncomment below and fill:
+% \begin{thebibliography}{99}
+% \bibitem{ref1} Author1, ``Title1'', Journal/Conf, Year.
+% ...
+% \end{thebibliography}
+
+\end{document}
